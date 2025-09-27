@@ -2,16 +2,16 @@
 //  TVTuneDetectiveApp.swift
 //  TVTuneDetective
 //
-//  Created by Kenneth Riendeau on 9/26/25.
-//
 
 import SwiftUI
 
 @main
 struct TVTuneDetectiveApp: App {
+    @StateObject private var engine = GameEngine()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(engine: engine)   
         }
     }
 }
