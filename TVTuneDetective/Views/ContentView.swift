@@ -14,9 +14,11 @@ struct ContentView: View {
                 NavigationStack {
                     switch engine.phase {
                     case .lobby:
-                        LobbyView(engine: engine)
+                        PlayerEntryView(engine: engine)
                     case .genreSelect:
                         GenreMenuView(engine: engine)
+                    case .hint:
+                        HintView(engine: engine)
                     case .bidding:
                         BiddingView(engine: engine)
                     case .countdown:

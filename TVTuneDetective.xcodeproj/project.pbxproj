@@ -195,6 +195,11 @@
 			);
 			mainGroup = 6FC4DEEA2E87399000C92CC7;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				6FCA3CE72E896873009BE428 /* XCRemoteSwiftPackageReference "GCDWebServer" */,
+				6FCA3CE82E8982E6009BE428 /* XCRemoteSwiftPackageReference "Telegraph" */,
+				6FCA3DA72E898F69009BE428 /* XCRemoteSwiftPackageReference "swifter" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6FC4DEF42E87399000C92CC7 /* Products */;
 			projectDirPath = "";
@@ -554,6 +559,33 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		6FCA3CE72E896873009BE428 /* XCRemoteSwiftPackageReference "GCDWebServer" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/swisspol/GCDWebServer.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.5.4;
+			};
+		};
+		6FCA3CE82E8982E6009BE428 /* XCRemoteSwiftPackageReference "Telegraph" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Building42/Telegraph.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.40.0;
+			};
+		};
+		6FCA3DA72E898F69009BE428 /* XCRemoteSwiftPackageReference "swifter" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/httpswift/swifter.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 	};
 	rootObject = 6FC4DEEB2E87399000C92CC7 /* Project object */;
 }

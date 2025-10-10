@@ -46,16 +46,65 @@ let genreCategories: [GenreCategory] = [
         ]
     ),
     GenreCategory(
-        name: "90s",
+        name: "60s",
         subcategories: [
             GenreSubcategory(
                 name: "Rock",
-                criteria: MusicCriteria(keywords: ["’90s Rock Essentials"])
+                criteria: MusicCriteria(keywords: ["'60s Rock Essentials"])
             ),
             GenreSubcategory(
                 name: "Pop Hits",
-                criteria: MusicCriteria(keywords: ["’90s Pop Essentials"])
+                criteria: MusicCriteria(keywords: ["’60s Pop Essentials"])
             )
+        ]
+    ),
+    GenreCategory(
+        name: "50s",
+        subcategories: [
+            GenreSubcategory(
+                name: "Rock",
+                criteria: MusicCriteria(keywords: ["’50s Rock Essentials"])
+            ),
+            GenreSubcategory(
+                name: "Pop Hits",
+                criteria: MusicCriteria(keywords: ["’50s Pop Essentials"])
+            )
+        ]
+    ),
+    GenreCategory(
+        name: "Hair Metal Essentials",
+        subcategories: [
+            GenreSubcategory(
+                name: "Rock",
+                criteria: MusicCriteria(keywords: ["’Hair Metal Essentials"])
+            ),
+        ]
+    ),
+    GenreCategory(
+        name: "Disco",
+        subcategories: [
+            GenreSubcategory(
+                name: "Disco",
+                criteria: MusicCriteria(keywords: ["’Disco Essentials"])
+            ),
+        ]
+    ),
+    GenreCategory(
+        name: "Yacht Rock",
+        subcategories: [
+            GenreSubcategory(
+                name: "Yacht Rock",
+                criteria: MusicCriteria(keywords: ["’Yacht Rock Essentials"])
+            ),
+        ]
+    ),
+    GenreCategory(
+        name: "Today's `Pop",
+        subcategories: [
+            GenreSubcategory(
+                name: "POP",
+                criteria: MusicCriteria(keywords: ["Pop Essentials"])
+            ),
         ]
     ),
     GenreCategory(

@@ -29,15 +29,30 @@ struct ResultsView: View {
                 Text("👤 \(result.player.name)")
                     .font(.title2).bold()
 
+                // 👇 Points summary
                 if result.points > 0 {
-                    Text("✅ Correct! +\(result.points) pts")
+                    Text("✅ +\(result.points) pts")
                         .foregroundColor(.green)
                         .font(.title2).bold()
-                } else {
-                    Text("❌ Wrong! No points")
+                } else if result.points < 0 {
+                    Text("❌ \(result.points) pts")
                         .foregroundColor(.red)
                         .font(.title2).bold()
+                } else {
+                    Text("⚪ 0 pts")
+                        .foregroundColor(.gray)
+                        .font(.title2).bold()
                 }
+
+                // 👇 Breakdown list
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(result.breakdown, id: \.self) { line in
+                        Text("• \(line)")
+                            .font(.title3)
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                }
+                .padding(.top, 10)
 
                 Spacer()
 

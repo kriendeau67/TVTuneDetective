@@ -7,6 +7,7 @@ import Foundation
 import MusicKit
 import AVFoundation
 
+
 @MainActor
 final class MusicManager: ObservableObject {
     private var previewPlayer: AVPlayer?   // AVPlayer for preview clips only

@@ -5,6 +5,18 @@ struct GenreMenuView: View {
     @State private var expandedCategory: UUID? = nil
 
     var body: some View {
+        
+        VStack(spacing: 20) {
+            // 👇 Only shows if a chooser is set
+            if let chooser = engine.currentChooser {
+                Text("🎲 \(chooser.name), it's your turn to pick a genre!")
+                    .font(.title2).bold()
+                    .foregroundColor(.yellow)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+        }
+            
         ScrollView {
             LazyVStack(spacing: 16) {
                 ForEach(genreCategories) { category in

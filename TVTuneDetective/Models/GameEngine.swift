@@ -12,16 +12,20 @@ enum GamePhase {
     case lobby
    // case game
     case genreSelect
+    case hint
     case bidding
     case countdown
     case guessing
     case result
     case scoreboard
 }
-
+enum PlayMode: String, CaseIterable, Hashable {
+    case tvOnly
+    case withPhones
+}
 @MainActor
 final class GameEngine: ObservableObject {
-    @Published var phase: GamePhase = .lobby
+ //   @Published var phase: GamePhase = .lobby
     @Published var currentGenre: MusicCriteria? = nil
     @Published var currentSong: MusicKit.Song? = nil
     @Published var currentBid: Int? = nil
@@ -30,12 +34,37 @@ final class GameEngine: ObservableObject {
     @Published var currentCriteria: MusicCriteria? = nil
     @Published var players: [Player] = []
     @Published var lastResult: RoundResult? = nil
+    private var playersWhoChose: Set<Player.ID> = []
+    @Published var currentChooser: Player? = nil
+    @Published var stateVersion: Int = 0
+    @Published var playMode: PlayMode = .tvOnly   // 👈 default is TV-only
+    @Published var lowestBid: Int? = nil
+    var phase: GamePhase = .lobby {
+        didSet { stateVersion &+= 1 } // 👈 bump version whenever phase changes
+    }
+
     let maxRounds = 5
     
     struct RoundResult {
         let player: Player
         let song: MusicKit.Song
         let points: Int
+        let breakdown: [String]   // 👈 new
+
+    }
+    
+    func pickNextChooser() {
+        let eligible = players.filter { !playersWhoChose.contains($0.id) }
+        
+        if eligible.isEmpty {
+            // Everyone has had a turn → reset
+            playersWhoChose.removeAll()
+        }
+        
+        if let next = (players.filter { !playersWhoChose.contains($0.id) }).randomElement() {
+            currentChooser = next
+            playersWhoChose.insert(next.id)
+        }
     }
     // Reset everything at start
     func startGame(with players: [Player]) {
@@ -46,13 +75,17 @@ final class GameEngine: ObservableObject {
         self.currentSong = nil
         self.currentBid = nil
         self.currentBidder = nil
+        self.playersWhoChose.removeAll()   // reset chooser history
+            pickNextChooser()
     }
     
     // After genre is selected
     func genreChosen(_ criteria: MusicCriteria) {
         self.currentCriteria = criteria          // used by New Song, etc.
-        self.currentGenre = criteria             // legacy readers keep working
-        self.phase = .bidding
+        self.currentGenre = criteria
+        self.currentBidder = currentChooser   // 👈 first bidder is chooser
+// legacy readers keep working
+        self.phase = .hint
        // self.phase = .game
     }
     
@@ -83,6 +116,7 @@ final class GameEngine: ObservableObject {
             currentSong = nil
             currentBid = nil
             currentBidder = nil
+            pickNextChooser()
             phase = .genreSelect
         }
     }

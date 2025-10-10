@@ -20,3 +20,14 @@ struct MusicCriteria: Codable, Equatable, Hashable {
         self.allowedArtistKeywords = allowedArtistKeywords
     }
 }
+// 👉 ADD: user-friendly display for a criteria
+extension MusicCriteria {
+    var displayName: String {
+        // Prefer explicit Apple editorial playlist names if present
+        if let kw = keywords?.first, !kw.isEmpty { return kw }
+        var parts: [String] = []
+        if let decade, !decade.isEmpty { parts.append(decade) }
+        if let genre,  !genre.isEmpty  { parts.append(genre) }
+        return parts.isEmpty ? "Any" : parts.joined(separator: " ")
+    }
+}

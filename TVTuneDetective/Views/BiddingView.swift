@@ -6,47 +6,51 @@ struct BiddingView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // Main content
             VStack(spacing: 30) {
-                Spacer().frame(height: 60) // leave space so header doesn’t overlap
+                Spacer().frame(height: 60)
 
+                // Phase header
                 Text("🕑 Bidding Phase")
                     .font(.largeTitle).bold()
                     .foregroundColor(.white)
 
-                if let genre = engine.currentGenre {
-                    Text("Clue: \(genre.keywords?.first ?? genre.genre ?? "Unknown")")
+                // Clue
+                if let genre = (engine.currentCriteria ?? engine.currentGenre) {
+                    Text("Clue: \(genre.displayName)")
                         .font(.title2)
                         .foregroundColor(.yellow)
                 }
 
-                // Bid buttons
-                VStack(spacing: 20) {
+                // ✅ Each player row: name + 10 buttons
+                VStack(spacing: 16) {
                     ForEach(engine.players) { player in
-                        HStack(spacing: 16) {
+                        HStack(spacing: 6) {
                             Text(player.name)
-                                .font(.title3).bold()
-                                .frame(width: 100, alignment: .leading)
+                                .font(.headline).bold()
+                                .frame(width: 90, alignment: .leading)
                                 .foregroundColor(.white)
 
-                            ForEach([3, 5, 7, 10], id: \.self) { seconds in
+                            ForEach(1...10, id: \.self) { seconds in
                                 Button {
                                     demoBids.append((player, seconds))
+                                    engine.lowestBid = seconds   // 👈 record the latest lowest bid
                                 } label: {
                                     Text("\(seconds)s")
-                                        .font(.headline)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 10)
-                                        .background(Color.green)
+                                        .font(.caption).bold()
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 4)
+                                        .background(isButtonEnabled(seconds) ? Color.green : Color.gray)
                                         .foregroundColor(.white)
-                                        .cornerRadius(8)
+                                        .cornerRadius(6)
                                 }
+                                .disabled(!isButtonEnabled(seconds))
                             }
                         }
                     }
                 }
+                .padding(.top, 20)
 
-                // Collected bids
+                // Collected bids (TV audience log)
                 if !demoBids.isEmpty {
                     VStack(spacing: 8) {
                         Text("Bids so far:")
@@ -58,31 +62,41 @@ struct BiddingView: View {
                     }
                 }
 
-               // Spacer()
-
-                // Pick a winner manually for now
+                // ✅ Name That Tune button
                 if let winner = demoBids.last {
                     Button {
-                        Task {
-                            if let song = try? await MusicManager().fetchSong(for: engine.currentGenre!) {
-                                engine.winningBid(player: winner.0, seconds: winner.1, song: song)
+                        Task {if let song = engine.currentSong {
+                            engine.winningBid(
+                                player: winner.0,
+                                seconds: winner.1,
+                                song: song
+                            )
+                        } else if let criteria = engine.currentCriteria ?? engine.currentGenre {
+                            // Fallback (only if something went wrong)
+                            if let song = try? await MusicManager().fetchSong(for: criteria) {
+                                engine.currentSong = song
+                                engine.winningBid(
+                                    player: winner.0,
+                                    seconds: winner.1,
+                                    song: song
+                                )
                             }
                         }
+                        }
                     } label: {
-                        Text("Finish Bidding → \(winner.0.name) wins")
+                        Text("🎵Name That Tune → \(winner.0.name)")
                             .font(.title2).bold()
                             .padding(.horizontal, 40)
                             .padding(.vertical, 20)
-                            .background(Color.orange)
+                            .background(engine.playMode == .tvOnly ? Color.orange : Color.gray)
                             .foregroundColor(.white)
                             .cornerRadius(12)
                     }
+                    .disabled(engine.playMode != .tvOnly)
+                    .padding(.top, 20)
                 }
             }
             .padding()
-
-            // ✅ Fixed header pinned to top
-
         }
         .background(
             LinearGradient(
@@ -92,5 +106,12 @@ struct BiddingView: View {
             )
             .ignoresSafeArea()
         )
+    }
+    private func isButtonEnabled(_ seconds: Int) -> Bool {
+        // No previous bids → all buttons enabled
+        guard let lowest = engine.lowestBid else { return true }
+
+        // Allow only lower bids
+        return seconds < lowest
     }
 }

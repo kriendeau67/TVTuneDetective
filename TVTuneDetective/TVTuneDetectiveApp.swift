@@ -1,8 +1,3 @@
-//
-//  TVTuneDetectiveApp.swift
-//  TVTuneDetective
-//
-
 import SwiftUI
 
 @main
@@ -11,7 +6,7 @@ struct TVTuneDetectiveApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(engine: engine)   
+            ContentView(engine: engine)
         }
     }
 }

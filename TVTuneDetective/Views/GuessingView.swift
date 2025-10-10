@@ -39,7 +39,7 @@ struct GuessingView: View {
                                 .stroke(Color.white.opacity(0.35), lineWidth: 1)
                         )
                         .foregroundColor(.white)
-
+                    
                     // Song title input
                     TextField("Song Title", text: $guessTitle)
                         .padding(.horizontal, 16)
@@ -82,37 +82,64 @@ struct GuessingView: View {
             .ignoresSafeArea()
         )
     }
+    private func normalize(_ text: String) -> String {
+        return text
+            .lowercased()
+            .replacingOccurrences(of: "&", with: "and")
+            .replacingOccurrences(of: "the ", with: "")
+            .replacingOccurrences(of: "[^a-z0-9 ]", with: "", options: .regularExpression) // strip punctuation
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
     
     private func evaluateGuess(for player: Player, actual song: MusicKit.Song) {
-       
-        let actualArtist = song.artistName.lowercased()
-        let actualTitle = song.title.lowercased()
+        let actualArtist = normalize(song.artistName)
+        let actualTitle = normalize(song.title)
         
-        let guessedArtist = guessArtist.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        let guessedTitle = guessTitle.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let guessedArtist = normalize(guessArtist)
+        let guessedTitle = normalize(guessTitle)
         
         var points = 0
+        var breakdown: [String] = []
+
+        // 👈 Artist scoring
+            if !guessedArtist.isEmpty {
+                if actualArtist.contains(guessedArtist) || guessedArtist.contains(actualArtist) {
+                    points += 10
+                    breakdown.append("+10 (Artist correct)")
+                } else {
+                    points -= 5
+                    breakdown.append("-5 (Artist wrong)")
+                }
+            } else {
+                breakdown.append("No artist guess")
+            }
         
-        if actualArtist.contains(guessedArtist), !guessedArtist.isEmpty {
-            points += 5
-        }
-        if actualTitle.contains(guessedTitle), !guessedTitle.isEmpty {
-            points += 5
-        }
+        // 👈 Title scoring
+            if !guessedTitle.isEmpty {
+                if actualTitle.contains(guessedTitle) || guessedTitle.contains(actualTitle) {
+                    points += 10
+                    breakdown.append("+10 (Title correct)")
+                } else {
+                    points -= 5
+                    breakdown.append("-5 (Title wrong)")
+                }
+            } else {
+                breakdown.append("No title guess")
+            }
         
         print("✅ Actual: \(song.title) by \(song.artistName)")
         print("📝 Guess: \(guessTitle) by \(guessArtist)")
-        print("🏆 Points awarded: \(points)")
+        print("🏆 Points change: \(points) [\(breakdown.joined(separator: ", "))]")
+
+        // Save result
+        engine.lastResult = GameEngine.RoundResult(player: player, song: song, points: points, breakdown: breakdown)
         
-        engine.lastResult = GameEngine.RoundResult(player: player, song: song, points: points)
-        engine.finishRound(correct: points > 0)
-        
-        // ✅ Update player score safely
+        // Update player score safely
         if let index = engine.players.firstIndex(where: { $0.id == player.id }) {
             engine.players[index].score += points
         }
         
-        // ✅ Mark the round finished
+        // Advance to result phase
         engine.finishRound(correct: points > 0)
     }
 }
