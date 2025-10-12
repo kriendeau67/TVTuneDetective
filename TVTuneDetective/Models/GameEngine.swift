@@ -74,6 +74,8 @@ final class GameEngine: ObservableObject {
         self.currentGenre = nil
         self.currentSong = nil
         self.currentBid = nil
+        self.lowestBid = nil   // 👈 reset for the new round
+
         self.currentBidder = nil
         self.playersWhoChose.removeAll()   // reset chooser history
             pickNextChooser()
@@ -116,6 +118,7 @@ final class GameEngine: ObservableObject {
             currentSong = nil
             currentBid = nil
             currentBidder = nil
+            lowestBid = nil   // 👈 reset for the new round
             pickNextChooser()
             phase = .genreSelect
         }
@@ -131,6 +134,7 @@ final class GameEngine: ObservableObject {
         currentBidder = nil
         currentBid = nil
         lastResult = nil
+        lowestBid = nil   // 👈 reset for the new round
         phase = .bidding   // 👈 or back to genreSelect if you want them to pick again
     }
 }
