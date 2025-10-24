@@ -26,6 +26,7 @@ enum PlayMode: String, CaseIterable, Hashable {
 @MainActor
 final class GameEngine: ObservableObject {
  //   @Published var phase: GamePhase = .lobby
+    @Published var musicManager = MusicManager()
     @Published var currentGenre: MusicCriteria? = nil
     @Published var currentSong: MusicKit.Song? = nil
     @Published var currentBid: Int? = nil
@@ -75,7 +76,7 @@ final class GameEngine: ObservableObject {
         self.currentSong = nil
         self.currentBid = nil
         self.lowestBid = nil   // 👈 reset for the new round
-
+        musicManager.resetPlayedSongs()
         self.currentBidder = nil
         self.playersWhoChose.removeAll()   // reset chooser history
             pickNextChooser()

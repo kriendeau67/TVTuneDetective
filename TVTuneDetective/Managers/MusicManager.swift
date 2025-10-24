@@ -11,7 +11,7 @@ import AVFoundation
 @MainActor
 final class MusicManager: ObservableObject {
     private var previewPlayer: AVPlayer?   // AVPlayer for preview clips only
-    
+    private var playedSongIDs: Set<MusicItemID> = []  // 👈 cache of played songs
     // 👇 Replace with your real Apple Music developer token
     private let developerToken = "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ijg1RENVQTM3VDUifQ.eyJpYXQiOjE3NTg5Mjg5OTAsImV4cCI6MTc3NDQ4MDk5MCwiaXNzIjoiUzU2UlEzQVJYQyJ9.YCYCv2kkf2BisXssTArMxxUCP4Ns0XcbHGO2ATwroD56JSK6LlogpVeFXpzOSVNDbOdfa7-A9JVeLT_dRHiLaA"
     private var userToken: String?
@@ -113,10 +113,59 @@ final class MusicManager: ObservableObject {
         
         guard !songs.isEmpty else { return nil }
         print("✅ Playlist \(playlistName) has \(songs.count) songs")
-        return songs.randomElement()
+       // return songs.randomElement()
+        let unplayedSongs = songs.filter { !playedSongIDs.contains($0.id) }
+        let selectionPool = unplayedSongs.isEmpty ? songs : unplayedSongs
+        if let song = selectionPool.randomElement() {
+            playedSongIDs.insert(song.id)
+            return song
+        }
+        return nil
     }
+    func resetPlayedSongs() { playedSongIDs.removeAll() }
     
     func fetchSong(for criteria: MusicCriteria) async throws -> MusicKit.Song? {
+        try await authorizeIfNeeded()
+        
+        // 👇 Step 1: Handle direct Apple Music playlist ID first
+        if let playlistID = criteria.playlistID {
+            print("🔎 Loading custom playlist ID: \(playlistID)")
+            let request = MusicCatalogResourceRequest<Playlist>(
+                matching: \.id, equalTo: MusicItemID(playlistID)
+            )
+            let response = try await request.response()
+            guard let playlist = response.items.first else {
+                print("❌ Playlist not found for ID \(playlistID)")
+                return nil
+            }
+
+            let detailed = try await playlist.with([.tracks])
+            guard let tracks = detailed.tracks else {
+                print("⚠️ Playlist found but no tracks.")
+                return nil
+            }
+
+            let songs: [MusicKit.Song] = tracks.compactMap {
+                if case let .song(song) = $0 { return song }
+                return nil
+            }
+
+            guard !songs.isEmpty else {
+                print("⚠️ Playlist is empty.")
+                return nil
+            }
+            // Filter out already-played songs
+            let unplayedSongs = songs.filter { !playedSongIDs.contains($0.id) }
+            let selectionPool = unplayedSongs.isEmpty ? songs : unplayedSongs
+
+            if let song = selectionPool.randomElement() {
+                playedSongIDs.insert(song.id)  // 👈 remember it
+                print("✅ Playlist → \(song.title) by \(song.artistName)")
+                return song
+            }
+        }
+
+        // 👇 Step 2: Handle single-keyword playlist lookup (legacy support)
         if let kws = criteria.keywords, kws.count == 1 {
             if let playlistSong = try await fetchRandomSongFromPlaylist(named: kws[0]) {
                 print("🎶 Playlist [\(kws[0])] → \(playlistSong.title) by \(playlistSong.artistName)")
@@ -125,10 +174,13 @@ final class MusicManager: ObservableObject {
                 print("⚠️ Playlist fallback triggered")
             }
         }
+
+        // 👇 Step 3: Normal catalog search fallback
         if let catalogSong = try await fetchRandomCatalogSong(criteria: criteria) {
             print("🎶 Catalog → \(catalogSong.title) by \(catalogSong.artistName)")
             return catalogSong
         }
+
         return nil
     }
     

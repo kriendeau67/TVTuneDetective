@@ -20,6 +20,32 @@ struct GenreSubcategory: Identifiable, Hashable {
 }
 let genreCategories: [GenreCategory] = [
     GenreCategory(
+        name: "50s",
+        subcategories: [
+            GenreSubcategory(
+                name: "Rock",
+                criteria: MusicCriteria(keywords: ["’50s Rock Essentials"])
+            ),
+            GenreSubcategory(
+                name: "Pop Hits",
+                criteria: MusicCriteria(keywords: ["’50s Pop Essentials"])
+            )
+        ]
+    ),
+    GenreCategory(
+        name: "60s",
+        subcategories: [
+            GenreSubcategory(
+                name: "Rock",
+                criteria: MusicCriteria(keywords: ["'60s Rock Essentials"])
+            ),
+            GenreSubcategory(
+                name: "Pop Hits",
+                criteria: MusicCriteria(keywords: ["’60s Pop Essentials"])
+            )
+        ]
+    ),
+    GenreCategory(
         name: "70s",
         subcategories: [
             GenreSubcategory(
@@ -46,28 +72,48 @@ let genreCategories: [GenreCategory] = [
         ]
     ),
     GenreCategory(
-        name: "60s",
+        name: "Sue and Ken",
         subcategories: [
             GenreSubcategory(
-                name: "Rock",
-                criteria: MusicCriteria(keywords: ["'60s Rock Essentials"])
-            ),
-            GenreSubcategory(
-                name: "Pop Hits",
-                criteria: MusicCriteria(keywords: ["’60s Pop Essentials"])
+                name: "Jericho Trip",
+                criteria: MusicCriteria(
+                    playlistID: "pl.u-4JomaB9uZm1XWz"
+                )
             )
         ]
     ),
     GenreCategory(
-        name: "50s",
+        name: "90s",
         subcategories: [
             GenreSubcategory(
                 name: "Rock",
-                criteria: MusicCriteria(keywords: ["’50s Rock Essentials"])
+                criteria: MusicCriteria(keywords: ["’90s Rock Essentials"])
             ),
             GenreSubcategory(
                 name: "Pop Hits",
-                criteria: MusicCriteria(keywords: ["’50s Pop Essentials"])
+                criteria: MusicCriteria(keywords: ["’90s Pop Essentials"])
+            )
+        ]
+    ),
+    GenreCategory(
+        name: "2000s",
+        subcategories: [
+            GenreSubcategory(
+                name: "Rock",
+                criteria: MusicCriteria(keywords: ["2000s Rock Essentials"])
+            ),
+            GenreSubcategory(
+                name: "Pop Hits",
+                criteria: MusicCriteria(keywords: ["2000s Pop Essentials"])
+            )
+        ]
+    ),
+    GenreCategory(
+        name: "Classic Rock",
+        subcategories: [
+            GenreSubcategory(
+                name: "Greatest Hits",
+                criteria: MusicCriteria(keywords: ["Classic Rock Essentials"])
             )
         ]
     ),
@@ -99,24 +145,11 @@ let genreCategories: [GenreCategory] = [
         ]
     ),
     GenreCategory(
-        name: "Today's `Pop",
+        name: "Modern Pop",
         subcategories: [
-            GenreSubcategory(
-                name: "POP",
-                criteria: MusicCriteria(keywords: ["Pop Essentials"])
-            ),
-        ]
-    ),
-    GenreCategory(
-        name: "2000s",
-        subcategories: [
-            GenreSubcategory(
-                name: "Rock",
-                criteria: MusicCriteria(keywords: ["2000s Rock Essentials"])
-            ),
             GenreSubcategory(
                 name: "Pop Hits",
-                criteria: MusicCriteria(keywords: ["2000s Pop Essentials"])
+                criteria: MusicCriteria(keywords: ["A-List Pop", "New in Pop", "Pop Hits"])
             )
         ]
     ),
@@ -146,21 +179,22 @@ let genreCategories: [GenreCategory] = [
             )
         ]
     ),
-    GenreCategory(
-        name: "Classic Rock",
-        subcategories: [
-            GenreSubcategory(
-                name: "Greatest Hits",
-                criteria: MusicCriteria(keywords: ["Classic Rock Essentials"])
-            )
-        ]
-    ),
+    
     GenreCategory(
         name: "Today’s Hits",
         subcategories: [
             GenreSubcategory(
-                name: "Global Top 40",
-                criteria: MusicCriteria(keywords: ["Today’s Hits"])
+                name: "Pop/Hip-Hop/R&B",
+                criteria: MusicCriteria(keywords: ["Today’s Hits", "Hits", "Global Top 40"])
+            )
+        ]
+    ),
+    GenreCategory(
+        name: "New Music",
+        subcategories: [
+            GenreSubcategory(
+                name: "Fresh Releases",
+                criteria: MusicCriteria(keywords: ["New Music Daily", "New in Pop", "Recent Hits"])
             )
         ]
     ),

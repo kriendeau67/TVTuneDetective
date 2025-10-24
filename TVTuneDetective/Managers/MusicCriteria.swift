@@ -6,18 +6,21 @@ struct MusicCriteria: Codable, Equatable, Hashable {
     var decade: String?
     var limit: Int
     var keywords: [String]?
+    var playlistID: String?   // 👈 new
     var allowedArtistKeywords: [String]?   // 👈 NEW
 
     init(genre: String? = nil,
          decade: String? = nil,
          limit: Int = 20,
          keywords: [String]? = nil,
+         playlistID: String? = nil,
          allowedArtistKeywords: [String]? = nil) {
         self.genre = genre
         self.decade = decade
         self.limit = limit
         self.keywords = keywords
         self.allowedArtistKeywords = allowedArtistKeywords
+        self.playlistID = playlistID
     }
 }
 // 👉 ADD: user-friendly display for a criteria
