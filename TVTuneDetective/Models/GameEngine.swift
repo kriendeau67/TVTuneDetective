@@ -9,7 +9,9 @@ import Foundation
 import MusicKit
 
 enum GamePhase {
+    case setup
     case lobby
+    
    // case game
     case genreSelect
     case hint
@@ -40,8 +42,9 @@ final class GameEngine: ObservableObject {
     @Published var stateVersion: Int = 0
     @Published var playMode: PlayMode = .tvOnly   // 👈 default is TV-only
     @Published var lowestBid: Int? = nil
-    var phase: GamePhase = .lobby {
-        didSet { stateVersion &+= 1 } // 👈 bump version whenever phase changes
+    
+    @Published var phase: GamePhase = .lobby {
+        didSet { stateVersion &+= 1 }
     }
 
     let maxRounds = 5
@@ -53,7 +56,12 @@ final class GameEngine: ObservableObject {
         let breakdown: [String]   // 👈 new
 
     }
-    
+    func finishSetup() {
+            if !players.isEmpty {
+                self.phase = .genreSelect // Jump straight to the game
+                pickNextChooser()         // Pick the first person to choose
+            }
+        }
     func pickNextChooser() {
         let eligible = players.filter { !playersWhoChose.contains($0.id) }
         

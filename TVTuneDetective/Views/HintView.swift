@@ -9,81 +9,99 @@ struct HintView: View {
     @State private var isLoadingSong = false
 
     var body: some View {
-        ZStack(alignment: .top) {
-            VStack(spacing: 30) {
-                Spacer().frame(height: 60)
+            ZStack {
+                // MARK: - Background Removed
+                // We deleted the LinearGradient here so the global background shows through.
+                Color.clear.ignoresSafeArea()
 
-                // Header
-                Text("💡 Hint Phase")
-                    .font(.largeTitle).bold()
-                    .foregroundColor(.white)
+                VStack(spacing: 50) {
+                    // Header & Category Info
+                    VStack(spacing: 15) {
+                        Text("💡 Hint Phase")
+                            .font(.system(size: 70, weight: .black))
+                            .foregroundColor(.white)
+                        
+                        if let genre = (engine.currentCriteria ?? engine.currentGenre) {
+                            Text("Category: \(genre.displayName)")
+                                .font(.title2)
+                                .foregroundColor(.yellow)
+                                .padding(.horizontal, 40)
+                                .padding(.vertical, 10)
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(10)
+                        }
+                    }
+                    .padding(.top, 60) // Matches your PlayerPanel top padding
 
-                // Show genre clue
-                if let genre = (engine.currentCriteria ?? engine.currentGenre) {
-                    Text("Clue: \(genre.displayName)")
-                        .font(.title2)
-                        .foregroundColor(.yellow)
+                    Spacer()
+
+                    // MARK: - Center Status Area
+                    VStack(spacing: 30) {
+                        if isLoadingSong {
+                            VStack(spacing: 20) {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .scaleEffect(2.0)
+                                Text("Fetching a random tune...")
+                                    .font(.headline)
+                                    .foregroundColor(.white.opacity(0.7))
+                            }
+                        } else if engine.currentSong != nil {
+                            VStack(spacing: 10) {
+                                Image(systemName: "music.note.badge.plus")
+                                    .font(.system(size: 80))
+                                    .foregroundColor(.green)
+                                Text("Song Loaded & Ready")
+                                    .font(.headline)
+                            }
+                        } else {
+                            Text("Preparing the deck...")
+                                .foregroundColor(.white.opacity(0.5))
+                        }
+                    }
+                    .frame(height: 300)
+
+                    Spacer()
+
+                    // MARK: - Bottom Controls
+                    HStack(spacing: 120) { // 👈 Increased spacing to 120 to fix overlap
+                        // Play Hint Button
+                        Button {
+                            playHint()
+                        } label: {
+                            VStack {
+                                Text("Play 1s Hint")
+                                    .font(.title2).bold()
+                                Text("\(3 - hintCount) remaining")
+                                    .font(.caption)
+                            }
+                            .frame(width: 350, height: 140)
+                        }
+                        .buttonStyle(.card)
+                        .tint(.green)
+                        .disabled(hintCount >= 3 || engine.currentSong == nil || isLoadingSong)
+
+                        // Continue Button
+                        Button {
+                            engine.phase = .bidding
+                        } label: {
+                            Text("Start Bidding ➡️")
+                                .font(.title2).bold()
+                                .frame(width: 350, height: 140)
+                        }
+                        .buttonStyle(.card)
+                        .tint(.orange)
+                        .disabled(engine.currentSong == nil || isLoadingSong)
+                    }
+                    .padding(.bottom, 80)
                 }
-
-                // Status
-                if engine.currentSong != nil {
-                    Text("Song ready to play 🎵")
-                        .font(.footnote)
-                        .foregroundColor(.white.opacity(0.7))
-                } else if isLoadingSong {
-                    ProgressView("Loading song…")
-                        .progressViewStyle(.circular)
-                        .tint(.white)
-                } else {
-                    Text("Preparing song…")
-                        .foregroundColor(.white.opacity(0.7))
-                }
-
-                // ✅ Play Hint button
-                Button {
-                    playHint()
-                } label: {
-                    Text("▶️ Play Hint (\(3 - hintCount) left)")
-                        .font(.title2).bold()
-                        .padding(.horizontal, 40)
-                        .padding(.vertical, 20)
-                        .background(hintCount >= 3 ? Color.gray : Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                }
-                .disabled(hintCount >= 3 || engine.currentSong == nil)
-
-                // ✅ Continue to bidding
-                Button {
-                    engine.phase = .bidding
-                } label: {
-                    Text("➡️ Go to Bidding")
-                        .font(.title2).bold()
-                        .padding(.horizontal, 40)
-                        .padding(.vertical, 20)
-                        .background(Color.orange)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                }
-                .padding(.top, 20)
             }
-            .padding()
+            .task {
+                await ensureSongLoaded()
+            }
         }
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [.purple, .blue]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-        )
-        // ✅ Preload one song immediately when view appears
-        .task {
-            await ensureSongLoaded()
-        }
-    }
 
-    // MARK: - Helpers
+    // MARK: - Logic Functions
 
     private func ensureSongLoaded() async {
         guard engine.currentSong == nil,
@@ -94,47 +112,32 @@ struct HintView: View {
             if let song = try await MusicManager().fetchSong(for: criteria) {
                 await MainActor.run {
                     engine.currentSong = song
-                    print("✅ Loaded song for hint: \(song.title) by \(song.artistName)")
+                    print("✅ Loaded song for hint: \(song.title)")
                 }
-            } else {
-                print("⚠️ No song returned for criteria: \(criteria.displayName)")
             }
         } catch {
-            print("❌ Failed to fetch song:", error)
+            print("❌ Failed to fetch song: \(error)")
         }
         isLoadingSong = false
     }
 
     private func playHint() {
-        print("🎬 playHint() called — hintCount: \(hintCount)")
-
-        guard hintCount < 3 else {
-            print("⛔️ Hint limit reached")
-            return
-        }
-
-        // ✅ Always use preloaded song from engine
-        guard let song = engine.currentSong else {
-            print("⚠️ No currentSong set in engine.")
-            return
-        }
-
-        // ✅ Fix unwrap for previewAssets optional
+        guard hintCount < 3, let song = engine.currentSong else { return }
+        
+        // Safety check for the Simulator while you're away
         guard let previewURL = song.previewAssets?.first?.url else {
-            print("⚠️ No preview URL available for song \(song.title)")
+            print("⚠️ No preview URL (Typical for Simulator)")
+            hintCount += 1 // Increment anyway so you can test the UI state
             return
         }
 
         hintCount += 1
-        print("🎧 Playing 1-sec preview from: \(previewURL)")
-
         player = AVPlayer(url: previewURL)
         player?.play()
 
-        // ✅ Stop after 1 second
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.player?.pause()
-            print("🛑 Stopped after 1 second")
+            self.player = nil
         }
     }
 }

@@ -7,125 +7,165 @@ struct CountdownView: View {
 
     @State private var timeRemaining: Int = 0
     @State private var isPlaying = false
-
-    // Keep references so we can stop/restart cleanly
+    @State private var isLoadingSong = false // 👈 Added this for the spinner
     @State private var timerRef: Timer? = nil
     @State private var playbackTask: Task<Void, Never>? = nil
-
+    @State private var revealedSong: MusicKit.Song? = nil
+    @State private var showRevealedSong = false
+    @FocusState private var isGotItFocused: Bool
+    
     var body: some View {
-        VStack(spacing: 30) {
-            if let player = engine.currentBidder,
-               let song = engine.currentSong,
-               let bid = engine.currentBid {
+        ZStack {
+            Color.clear.ignoresSafeArea()
 
-                Text("🎯 \(player.name)’s Bid")
-                    .font(.largeTitle).bold()
-                    .foregroundColor(.yellow)
+            VStack(spacing: 40) {
+                if let player = engine.currentBidder,
+                   let song = engine.currentSong,
+                   let bid = engine.currentBid {
 
-                // Bid time label + countdown
-                VStack(spacing: 8) {
-                    Text("Bid Time")
-                        .font(.title2).foregroundColor(.white.opacity(0.85))
-                    Text("\(timeRemaining == 0 ? bid : timeRemaining)")
-                        .font(.system(size: 100, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .shadow(radius: 10)
-                }
+                    Text("🎯 \(player.name)’s Bid: \(bid) Seconds")
+                        .font(.system(size: 70, weight: .black))
+                        .foregroundColor(.yellow)
+                        .padding(.top, 60)
 
-                Spacer().frame(height: 10)
-
-                // Controls
-                HStack(spacing: 24) {
-                    Button {
-                        playSnippet(song: song, seconds: bid)
-                    } label: {
-                        Text(isPlaying ? "⏳ \(timeRemaining)s left" : "▶️ Play Snippet")
-                            .font(.title2).bold()
-                            .padding(.horizontal, 32)
-                            .padding(.vertical, 16)
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .shadow(radius: 5)
-                    }
-                    .disabled(isPlaying) // prevent overlap; becomes enabled when timer ends
-
-                    Button {
-                        stopAll()
-                        engine.moveToGuessing()
-                    } label: {
-                        Text("➡️ Submit Guess")
-                            .font(.title2).bold()
-                            .padding(.horizontal, 32)
-                            .padding(.vertical, 16)
-                            .background(Color.orange)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .shadow(radius: 5)
-                    }
-                    
-                    Button {
-                        stopAll()
-                        Task {
-                            guard let criteria = engine.currentCriteria else {
-                                print("⚠️ No criteria set in engine")
-                                return
-                            }
-                            do {
-                                if let newSong = try await music.fetchSong(for: criteria) {
-                                    engine.currentSong = newSong
-                                    print("🎲 New song → \(newSong.title) by \(newSong.artistName)")
-                                    // (Optional) auto-play right away:
-                                    // try await music.playSongSnippet(newSong, seconds: Double(engine.currentBid ?? 10))
-                                } else {
-                                    print("❌ No replacement song found for criteria: \(criteria)")
+                    ZStack {
+                        if showRevealedSong, let rSong = revealedSong {
+                            VStack(spacing: 20) {
+                                Text("🎵 THE SONG WAS")
+                                    .font(.headline)
+                                    .foregroundColor(.white.opacity(0.6))
+                                
+                                Text(rSong.title)
+                                    .font(.system(size: 80, weight: .black))
+                                    .foregroundColor(.yellow)
+                                    .multilineTextAlignment(.center)
+                                
+                                Text(rSong.artistName)
+                                    .font(.system(size: 50, weight: .medium))
+                                    .foregroundColor(.white)
+                                
+                                Button("Got It") {
+                                    showRevealedSong = false
                                 }
-                            } catch {
-                                print("❌ Failed to fetch replacement:", error.localizedDescription)
+                                .buttonStyle(.card)
+                                .focused($isGotItFocused)
+                                .padding(.top, 40)
+                            }
+                            .padding(60)
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(30)
+                            .transition(.scale.combined(with: .opacity))
+                        } else if isLoadingSong {
+                            // 👈 Added a spinner so you know the "New Song" is fetching
+                            VStack(spacing: 20) {
+                                ProgressView()
+                                    .scaleEffect(2.0)
+                                Text("Fetching new tune...")
+                                    .font(.headline)
+                                    .foregroundColor(.white.opacity(0.6))
+                            }
+                        } else {
+                            VStack(spacing: 10) {
+                                Text("\(timeRemaining == 0 ? bid : timeRemaining)")
+                                    .font(.system(size: 250, weight: .black, design: .rounded))
+                                    .foregroundColor(.white)
+                                    .shadow(color: .green.opacity(0.5), radius: 20)
+                                
+                                Text("SECONDS REMAINING")
+                                    .font(.headline)
+                                    .foregroundColor(.white.opacity(0.5))
                             }
                         }
-                    } label: {
-                        Text("🎲 New Song")
-                            .font(.title2).bold()
-                            .padding(.horizontal, 32)
-                            .padding(.vertical, 16)
-                            .background(isPlaying ? Color.gray : Color.purple)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .shadow(radius: 5)
                     }
-                    .disabled(isPlaying)   // stays locked while the snippet is playing
-                }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                Spacer()
-            } else {
-                Text("⚠️ Missing song or bid info")
-                    .foregroundColor(.red)
+                    HStack(spacing: 60) {
+                        Button {
+                            playSnippet(song: song, seconds: bid)
+                        } label: {
+                            Label(isPlaying ? "\(timeRemaining)s..." : "Play Snippet", systemImage: "play.fill")
+                                .padding(.horizontal, 30)
+                                .frame(height: 120)
+                        }
+                        .buttonStyle(.card)
+                        .tint(.green)
+                        .disabled(isPlaying || showRevealedSong || isLoadingSong)
+
+                        Button {
+                            stopAll()
+                            engine.moveToGuessing()
+                        } label: {
+                            Text("➡️ Submit Guess")
+                                .padding(.horizontal, 30)
+                                .frame(height: 120)
+                        }
+                        .buttonStyle(.card)
+                        .tint(.orange)
+                        .disabled(showRevealedSong || isLoadingSong)
+
+                        Button {
+                            revealAndReplaceSong()
+                        } label: {
+                            Text("🎲 New Song")
+                                .padding(.horizontal, 30)
+                                .frame(height: 120)
+                        }
+                        .buttonStyle(.card)
+                        .tint(.purple)
+                        .disabled(isPlaying || showRevealedSong || isLoadingSong)
+                    }
+                    .padding(.bottom, 80)
+                }
             }
         }
-        .padding()
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [.purple, .blue]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-        )
-        .onDisappear {
-            // Safety: stop if we navigate away
-            stopAll()
+        .onDisappear { stopAll() }
+    }
+
+    // MARK: - Logic Functions
+    
+    private func revealAndReplaceSong() {
+        stopAll()
+        revealedSong = engine.currentSong
+        
+        // 1. Wipe old song immediately
+        engine.currentSong = nil
+        
+        withAnimation(.spring()) {
+            showRevealedSong = true
+        }
+        
+        isGotItFocused = true
+        
+        // 2. Trigger the fetch for the NEW song
+        Task {
+            await ensureSongLoaded()
         }
     }
 
-    private func playSnippet(song: MusicKit.Song, seconds: Int) {
-        // Clean restart
-        stopAll()
+    // 👈 THIS WAS THE MISSING PIECE
+    private func ensureSongLoaded() async {
+        guard engine.currentSong == nil,
+              let criteria = engine.currentCriteria ?? engine.currentGenre else { return }
 
+        isLoadingSong = true
+        do {
+            if let song = try await music.fetchSong(for: criteria) {
+                await MainActor.run {
+                    engine.currentSong = song
+                    print("✅ New song loaded: \(song.title)")
+                }
+            }
+        } catch {
+            print("❌ Failed to fetch new song: \(error)")
+        }
+        isLoadingSong = false
+    }
+
+    private func playSnippet(song: MusicKit.Song, seconds: Int) {
+        stopAll()
         timeRemaining = seconds
         isPlaying = true
 
-        // Start countdown timer
         timerRef = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
             if timeRemaining > 0 {
                 timeRemaining -= 1
@@ -135,34 +175,23 @@ struct CountdownView: View {
             }
         }
 
-        // Start audio snippet for exactly `seconds`
         playbackTask = Task {
             do {
-               // try await music.playSongSnippet(song, seconds: Double(seconds))
                 try await music.playPreviewSnippet(song, seconds: Double(seconds))
             } catch {
-                print("❌ Failed to play snippet:", error.localizedDescription)
                 isPlaying = false
                 timerRef?.invalidate()
-                timerRef = nil
             }
         }
     }
 
     private func stopAll() {
-        // Stop timer
         timerRef?.invalidate()
         timerRef = nil
-
-        // Stop any in-flight playback task
         playbackTask?.cancel()
         playbackTask = nil
-        music.stopPreview()                        // 👈 NEW: stop AVPlayer
-            ApplicationMusicPlayer.shared.stop()       // safe to keep; no-op if not used
-
-        // Stop the player immediately
+        music.stopPreview()
         ApplicationMusicPlayer.shared.stop()
-
         isPlaying = false
     }
 }
