@@ -123,24 +123,7 @@ struct CountdownView: View {
 
     // MARK: - Logic Functions
     
-    private func revealAndReplaceSong() {
-        stopAll()
-        revealedSong = engine.currentSong
-        
-        // 1. Wipe old song immediately
-        engine.currentSong = nil
-        
-        withAnimation(.spring()) {
-            showRevealedSong = true
-        }
-        
-        isGotItFocused = true
-        
-        // 2. Trigger the fetch for the NEW song
-        Task {
-            await ensureSongLoaded()
-        }
-    }
+
 
     // 👈 THIS WAS THE MISSING PIECE
     private func ensureSongLoaded() async {
@@ -162,36 +145,67 @@ struct CountdownView: View {
     }
 
     private func playSnippet(song: MusicKit.Song, seconds: Int) {
-        stopAll()
-        timeRemaining = seconds
-        isPlaying = true
+            stopAll() // Clean slate
+            
+            timeRemaining = seconds
+            isPlaying = true
 
-        timerRef = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
-            if timeRemaining > 0 {
-                timeRemaining -= 1
-            } else {
-                timer.invalidate()
-                isPlaying = false
+            // 1. The Visual Timer
+            timerRef = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+                if timeRemaining > 0 {
+                    timeRemaining -= 1
+                } else {
+                    stopAll()
+                }
+            }
+
+            // 2. The Audio Execution
+            playbackTask = Task {
+                do {
+                    // This calls your original preview logic
+                    try await music.playPreviewSnippet(song, seconds: Double(seconds))
+                } catch {
+                    print("Snippet error: \(error)")
+                    stopAll()
+                }
             }
         }
 
-        playbackTask = Task {
-            do {
-                try await music.playPreviewSnippet(song, seconds: Double(seconds))
-            } catch {
-                isPlaying = false
-                timerRef?.invalidate()
+        private func stopAll() {
+            // Kill the visual timer
+            timerRef?.invalidate()
+            timerRef = nil
+            
+            // Kill the snippet task and player
+            playbackTask?.cancel()
+            playbackTask = nil
+            music.stopPreview()
+            
+            // Kill the full song player (the hint)
+            ApplicationMusicPlayer.shared.stop()
+            
+            isPlaying = false
+        }
+
+        private func revealAndReplaceSong() {
+            stopAll()
+            revealedSong = engine.currentSong
+            
+            withAnimation(.spring()) {
+                showRevealedSong = true
+            }
+            
+            isGotItFocused = true
+            
+            // Fetch the next song in the background
+            Task {
+                if let criteria = engine.currentCriteria ?? engine.currentGenre {
+                    if let newSong = try? await music.fetchSong(for: criteria) {
+                        await MainActor.run {
+                            engine.currentSong = newSong
+                        }
+                    }
+                }
             }
         }
-    }
-
-    private func stopAll() {
-        timerRef?.invalidate()
-        timerRef = nil
-        playbackTask?.cancel()
-        playbackTask = nil
-        music.stopPreview()
-        ApplicationMusicPlayer.shared.stop()
-        isPlaying = false
-    }
 }

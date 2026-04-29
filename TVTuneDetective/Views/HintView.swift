@@ -48,8 +48,7 @@ struct HintView: View {
                             }
                         } else if engine.currentSong != nil {
                             VStack(spacing: 10) {
-                                Image(systemName: "music.note.badge.plus")
-                                    .font(.system(size: 80))
+                                Image(systemName: "music.note.list")                                    .font(.system(size: 80))
                                     .foregroundColor(.green)
                                 Text("Song Loaded & Ready")
                                     .font(.headline)

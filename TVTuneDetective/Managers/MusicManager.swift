@@ -192,6 +192,12 @@ final class MusicManager: ObservableObject {
     private struct AMPreview: Decodable { let url: URL }
     
     func previewURL(for song: MusicKit.Song) async throws -> URL {
+        // 1. First, check if the song already has the preview built-in (Modern MusicKit way)
+        if let previewURL = song.previewAssets?.first?.url {
+            return previewURL
+        }
+        
+        // 2. Fallback: Your existing manual API call (Keep this for older catalog items)
         let storefront = Locale.current.regionCode?.lowercased() ?? "us"
         let songID = song.id.rawValue
         guard let url = URL(string: "https://api.music.apple.com/v1/catalog/\(storefront)/songs/\(songID)") else {
@@ -199,38 +205,38 @@ final class MusicManager: ObservableObject {
         }
         
         var req = URLRequest(url: url)
-        req.httpMethod = "GET"
         req.setValue("Bearer \(developerToken)", forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
         
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw MusicError.noPreviewURL
-        }
-        
+        let (data, _) = try await URLSession.shared.data(for: req)
         let decoded = try JSONDecoder().decode(AMPreviewResponse.self, from: data)
+        
         if let preview = decoded.data.first?.attributes?.previews?.first?.url {
             return preview
         }
+        
         throw MusicError.noPreviewURL
     }
     
-    func playPreviewSnippet(_ song: MusicKit.Song, seconds: Double) async throws {
-        let url = try await previewURL(for: song)
+    // MARK: - Preview playback
         
-        stopPreview()
+        func playPreviewSnippet(_ song: MusicKit.Song, seconds: Double) async throws {
+            let url = try await previewURL(for: song)
+            
+            // ONLY stop the snippet player, leave the system player alone here
+            previewPlayer?.pause()
+            previewPlayer = nil
+            
+            let item = AVPlayerItem(url: url)
+            let player = AVPlayer(playerItem: item)
+            previewPlayer = player
+            player.play()
+            
+            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            stopPreview()
+        }
         
-        let item = AVPlayerItem(url: url)
-        let player = AVPlayer(playerItem: item)
-        previewPlayer = player
-        player.play()
-        
-        try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
-        stopPreview()
-    }
-    
-    func stopPreview() {
-        previewPlayer?.pause()
-        previewPlayer = nil
-    }
+        func stopPreview() {
+            previewPlayer?.pause()
+            previewPlayer = nil
+        }
 }
