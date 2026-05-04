@@ -10,6 +10,8 @@ import MusicKit
 
 enum GamePhase {
     case setup
+    case modeSelect   // 👈 NEW: Choice between Game or Jukebox
+    case jukebox      // 👈 NEW: The Jukebox search screen
     case lobby
     
    // case game
@@ -57,11 +59,10 @@ final class GameEngine: ObservableObject {
 
     }
     func finishSetup() {
-            if !players.isEmpty {
-                self.phase = .genreSelect // Jump straight to the game
-                pickNextChooser()         // Pick the first person to choose
-            }
+        if !players.isEmpty {
+            self.phase = .modeSelect // 👈 Change this from .genreSelect or .lobby
         }
+    }
     func pickNextChooser() {
         let eligible = players.filter { !playersWhoChose.contains($0.id) }
         

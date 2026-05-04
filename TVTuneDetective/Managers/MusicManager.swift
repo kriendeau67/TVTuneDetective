@@ -12,6 +12,7 @@ import AVFoundation
 final class MusicManager: ObservableObject {
     private var previewPlayer: AVPlayer?   // AVPlayer for preview clips only
     private var playedSongIDs: Set<MusicItemID> = []  // 👈 cache of played songs
+    @Published var isPlaying: Bool = false
     // 👇 Replace with your real Apple Music developer token
     private let developerToken = "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ijg1RENVQTM3VDUifQ.eyJpYXQiOjE3NTg5Mjg5OTAsImV4cCI6MTc3NDQ4MDk5MCwiaXNzIjoiUzU2UlEzQVJYQyJ9.YCYCv2kkf2BisXssTArMxxUCP4Ns0XcbHGO2ATwroD56JSK6LlogpVeFXpzOSVNDbOdfa7-A9JVeLT_dRHiLaA"
     private var userToken: String?
@@ -239,4 +240,42 @@ final class MusicManager: ObservableObject {
             previewPlayer?.pause()
             previewPlayer = nil
         }
+    func searchCatalog(for term: String) async throws -> [MusicKit.Song] {
+        try await authorizeIfNeeded()
+        
+        // Explicitly cast the types array to satisfy the compiler
+        let searchTypes: [any MusicCatalogSearchable.Type] = [MusicKit.Song.self]
+        
+        var request = MusicCatalogSearchRequest(
+            term: term,
+            types: searchTypes
+        )
+        request.limit = 20 // Let's grab a few more for a Jukebox
+        
+        let response = try await request.response()
+        return Array(response.songs)
+    }
+
+    func playFullSong(_ song: MusicKit.Song) {
+        Task {
+            let player = ApplicationMusicPlayer.shared
+            // Clear queue and add the new song
+            player.queue = [song]
+            do {
+                try await player.play()
+                print("🎶 Now playing: \(song.title)")
+            } catch {
+                print("Playback failed: \(error)")
+            }
+        }
+    }
+    func stopMusic() {
+        // Stop the full player
+        ApplicationMusicPlayer.shared.stop()
+        
+        // Stop the snippet player (if it's running)
+        previewPlayer?.pause()
+        
+        isPlaying = false
+    }
 }

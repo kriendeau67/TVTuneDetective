@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ScoreboardView: View {
     @ObservedObject var engine: GameEngine
+    @StateObject private var music = MusicManager()
     
     var body: some View {
         ZStack {
@@ -44,9 +45,18 @@ struct ScoreboardView: View {
                 // MARK: - Action Button
                 // Swapped to .buttonStyle(.card) for native TV focus/glow effect
                 Button {
-                    engine.phase = .lobby
-                    engine.roundNumber = 1
+                    // 1. Use the engine's built-in reset logic to wipe lowestBid, songs, etc.
+                    engine.startGame(with: engine.players)
+                    
+                    // 2. Clear the scores (since startGame preserves the players but doesn't zero them)
                     engine.players.indices.forEach { engine.players[$0].score = 0 }
+                    
+                    // 3. Reset the music history
+                    music.resetPlayedSongs()
+                    
+                    // 4. Force go back to lobby/setup
+                    engine.phase = .lobby
+                    
                 } label: {
                     HStack {
                         Image(systemName: "arrow.clockwise")

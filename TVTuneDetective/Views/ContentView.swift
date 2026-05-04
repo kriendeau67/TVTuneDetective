@@ -34,6 +34,10 @@ struct ContentView: View {
                         switch engine.phase {
                         case .setup:
                             PlayerEntryView(engine: engine)
+                        case .modeSelect:
+                            ModeSelectView(engine: engine) // 👈 The new fork in the road
+                        case .jukebox:
+                            JukeboxSearchView(engine: engine) // 👈 We'll build this next
                         case .lobby:
                             LobbyView(engine: engine)
                         case .genreSelect:
